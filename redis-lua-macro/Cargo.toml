@@ -1,6 +1,6 @@
 [package]
 name = "redis-lua-macro"
-version = "0.4.0"
+version = "0.5.0"
 authors = ["YushiOMOTE <yushiomote@gmail.com>"]
 edition = "2018"
 keywords = ["redis", "database"]
@@ -10,6 +10,9 @@ repository = "https://github.com/yushiomote/redis-lua"
 documentation = "https://docs.rs/redis-lua"
 license = "BSD-3-Clause"
 readme = "../README.md"
+
+[features]
+unstable = []
 
 [lib]
 proc-macro = true
