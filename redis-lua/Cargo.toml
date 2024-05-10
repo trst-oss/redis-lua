@@ -1,6 +1,6 @@
 [package]
 name = "redis-lua"
-version = "0.4.0"
+version = "0.5.0"
 authors = ["YushiOMOTE <yushiomote@gmail.com>"]
 edition = "2018"
 keywords = ["redis", "database"]
@@ -11,19 +11,22 @@ documentation = "https://docs.rs/redis-lua"
 license = "BSD-3-Clause"
 readme = "../README.md"
 
+[features]
+unstable = []
+
 [dependencies]
 serde = "1.0"
 rmp = "0.8"
 proc-macro-hack = "0.5"
-redis = "0.16"
+redis = "0.25"
 futures = "0.3"
 async-trait = "0.1"
-redis-lua-macro = { version = "0.4", path = "../redis-lua-macro" }
+redis-lua-macro = { version = "=0.5.0", path = "../redis-lua-macro" }
 
 [dev-dependencies]
 rmp-serde = "0.14"
-redis = { version = "0.16", features = ["tokio-rt-core"] }
-tokio = { version = "0.2", features = ["full"] }
+redis = { version = "0.25", features = ["tokio-comp"] }
+tokio = { version = "1.37", features = ["full"] }
 
 [build-dependencies]
 rustc_version = "0.2"
