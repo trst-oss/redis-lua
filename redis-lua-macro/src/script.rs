@@ -15,17 +15,15 @@ pub struct Arg {
     key: Token,
     rust: TokenTree,
     lua: String,
-    argv: String,
     atype: ArgType,
 }
 
 impl Arg {
-    fn new(key: Token, rust: TokenTree, lua: String, argv: String, atype: ArgType) -> Self {
+    fn new(key: Token, rust: TokenTree, lua: String, atype: ArgType) -> Self {
         Self {
             key,
             rust,
             lua,
-            argv,
             atype,
         }
     }
@@ -43,11 +41,6 @@ impl Arg {
     /// As lua internal variable, e.g. `__internal_from_args1`
     pub fn as_lua(&self) -> &str {
         &self.lua
-    }
-
-    /// As `ARGV` parameter, e.g. `ARGV[1]`
-    pub fn as_argv(&self) -> &str {
-        &self.argv
     }
 
     pub fn atype(&self) -> ArgType {
@@ -72,14 +65,13 @@ impl Args {
             None => {
                 let rust = tt.clone();
                 let lua = format!("__internal_from_args_{}", self.0.len());
-                let argv = format!("ARGV[{}]", self.0.len() + 1);
                 let atype = if token.is_cap() {
                     ArgType::Cap
                 } else {
                     ArgType::Var
                 };
 
-                let arg = Arg::new(key, rust, lua, argv, atype);
+                let arg = Arg::new(key, rust, lua, atype);
                 self.0.push(arg.clone());
                 arg
             }
@@ -94,7 +86,6 @@ impl Args {
 #[derive(Debug)]
 pub struct Script {
     script: String,
-    wrapped: String,
     spans: BTreeMap<usize, Span>,
     args: Args,
 }
@@ -147,30 +138,8 @@ impl Script {
 
         let script = script.trim_end().to_string();
 
-        // `wrapped` contains `script` plus variable initialization logic at the top.
-        // Only `script` part is checked by the linter. The linter is configured
-        // so that it allows only special local variables like `__internal_0` but doesn't
-        // allow `ARGV`. This is to prevent script authers from accidentally writing
-        // `ARGV[x]` where `x` is larger than actual arguments given by a command.
-        let wrapped = if convert_args {
-            let wrapper = args.args().iter().fold(String::new(), |s, arg| {
-                // Generating these lines.
-                //
-                // ```
-                // local __internal_0 = ARGV[0];
-                // local __internal_1 = ARGV[1];
-                // local __internal_2 = ARGV[2];
-                // ```
-                s + &format!("local {} = {}; ", arg.as_lua(), arg.as_argv())
-            });
-            format!("{}\n{}", wrapper, script)
-        } else {
-            "".into()
-        };
-
         Self {
             script,
-            wrapped,
             spans,
             args,
         }
@@ -178,10 +147,6 @@ impl Script {
 
     pub fn script(&self) -> &str {
         &self.script
-    }
-
-    pub fn wrap(&self) -> &str {
-        &self.wrapped
     }
 
     pub fn args(&self) -> &[Arg] {

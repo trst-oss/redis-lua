@@ -54,7 +54,6 @@ pub fn lua(input: TokenStream1) -> TokenStream1 {
     let defs = gen_all(&script);
 
     let body_str = script.script();
-    let script_str = script.wrap();
 
     let args = all(&script).map(|(_, arg)| {
         let arg = arg.as_lua().to_string();
@@ -72,7 +71,7 @@ pub fn lua(input: TokenStream1) -> TokenStream1 {
 
             #defs
 
-            Chain0::new(redis_lua::Info::new(#script_str, #body_str, &[#(#args),*]), (), #(#caps),*)
+            Chain0::new(redis_lua::Info::new(#body_str, &[#(#args),*]), (), #(#caps),*)
         }
     };
     script_code.into()
