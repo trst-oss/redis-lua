@@ -11,9 +11,6 @@ documentation = "https://docs.rs/redis-lua"
 license = "BSD-3-Clause"
 readme = "../README.md"
 
-[features]
-unstable = []
-
 [dependencies]
 serde = "1.0"
 rmp = "0.8"

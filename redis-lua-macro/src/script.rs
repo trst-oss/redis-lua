@@ -127,7 +127,6 @@ impl Script {
                 .take()
                 .map(|lc| (lc.line, lc.column))
                 .unwrap_or_else(|| (line, col));
-
             if line > prev_line {
                 script.push_str("\n");
             } else if line == prev_line {

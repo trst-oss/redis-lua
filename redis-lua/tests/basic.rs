@@ -58,13 +58,15 @@ async fn ops_assign() {
         local a, b = 10, 2*x
         return a + b
     }, 76);
-    #[cfg(unstable)]
+
     test!(Option<usize> {
-        local a, b, c = 1, 2
+        --[[ selene: allow(unbalanced_assignments) ]]
+        local _a, _b, c = 1, 2
         return c
     }, None);
-    #[cfg(unstable)]
+
     test!(Vec<usize> {
+        --[[ selene: allow(unbalanced_assignments) ]]
         local a, b = 1, 2, 3;
         return {a, b}
     }, vec![1, 2]);
@@ -225,6 +227,7 @@ async fn table_ctor() {
     // 1) "B"
     // 2) "C"
     test!(Vec<String> {
+        --[[ selene: allow(mixed_table) ]]
         return {[0]="A", "B", "C"}
     }, vec!["B".to_owned(), "C".into()]);
 
@@ -243,6 +246,7 @@ async fn table_ctor() {
         return a.x == 1000 and a.y == 100
     }, true);
     test!(bool {
+        --[[ selene: allow(mixed_table) ]]
         local p = {color="blue", thickness=2, npoints=4,
                    {x=0,   y=0},
                    {x=-10, y=0},
@@ -263,8 +267,10 @@ async fn table_ctor() {
         return opnames["-"] == "sub" and a[22] == "---"
     }, true);
 
-    test!(Vec<String> { return {x=10, y=45; "one", "two", "three"} },
-          vec!["one".to_owned(), "two".into(), "three".into()]);
+    test!(Vec<String> {
+        --[[ selene: allow(mixed_table) ]]
+        return {x=10, y=45; "one", "two", "three"}
+    }, vec!["one".to_owned(), "two".into(), "three".into()]);
 }
 
 #[tokio::test]
@@ -338,14 +344,13 @@ async fn ctrl() {
         return s
     }, 55);
 
-    #[cfg(unstable)]
     test!(usize {
         local a = {1,3,3,4,2,5,6,1,3,4};
         local value = 5;
         local found = nil
         for i=1,10 do
             if a[i] == value then
-                found = i      -- save value of 'i'
+                found = i      --[[ save value of 'i' ]]
                 break
             end
         end

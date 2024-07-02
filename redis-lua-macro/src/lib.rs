@@ -7,7 +7,6 @@ use quote::quote;
 
 mod chains;
 mod check;
-mod file;
 mod patterns;
 mod script;
 mod token;
