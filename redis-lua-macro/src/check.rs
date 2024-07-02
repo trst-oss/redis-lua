@@ -1,24 +1,32 @@
-use crate::{file::as_path, proc_macro::Span, script::Script};
+use crate::{proc_macro::Span, script::Script};
 use full_moon::{
-    ast::{owned::Owned, AstError},
+    ast::AstError,
     tokenizer::Token,
     Error as ParseError,
 };
 use proc_macro_error::{Diagnostic as PDiagnostic, Level as PLevel};
 use selene_lib::{
-    rules::Severity, standard_library::StandardLibrary, Checker as SeleneChecker, CheckerConfig,
+    lints::Severity, standard_library::StandardLibrary, Checker as SeleneChecker, CheckerConfig,
     CheckerDiagnostic,
 };
 use std::include_str;
 
-fn convert_level(l: Severity) -> PLevel {
-    match l {
+#[rustversion::nightly]
+fn convert_level(l: Severity) -> Option<PLevel> {
+    Some(match l {
         Severity::Error => PLevel::Error,
-        #[cfg(unstable)]
         Severity::Warning => PLevel::Warning,
-        #[cfg(not(unstable))]
+        Severity::Allow => return None,
+    })
+}
+
+#[rustversion::not(nightly)]
+fn convert_level(l: Severity) -> Option<PLevel> {
+    Some(match l {
+        Severity::Error => PLevel::Error,
         Severity::Warning => PLevel::Error,
-    }
+        Severity::Allow => return None,
+    })
 }
 
 fn emit_diag_one(span: Vec<Span>, cd: CheckerDiagnostic) {
@@ -26,8 +34,8 @@ fn emit_diag_one(span: Vec<Span>, cd: CheckerDiagnostic) {
     let msg = format!("in lua: {} ({})", d.message, d.code);
 
     let pd = match span.get(0).cloned() {
-        Some(span) => PDiagnostic::spanned(span.into(), convert_level(cd.severity), msg),
-        None => PDiagnostic::new(convert_level(cd.severity), msg),
+        Some(span) => PDiagnostic::spanned(span.into(), convert_level(cd.severity).unwrap(), msg),
+        None => PDiagnostic::new(convert_level(cd.severity).unwrap(), msg),
     };
     let pd = d
         .notes
@@ -53,7 +61,7 @@ fn emit_parse_err(script: &Script, msg: &str, token: Option<&Token>) {
 }
 
 fn emit_diag(script: &Script, diags: Vec<CheckerDiagnostic>) {
-    for d in diags {
+    for d in diags.into_iter().filter(|d| d.severity != Severity::Allow) {
         let label = d.diagnostic.primary_label.range;
         let spans = script.range_to_span((label.0 as usize, label.1 as usize));
         emit_diag_one(spans.clone(), d);
@@ -61,12 +69,12 @@ fn emit_diag(script: &Script, diags: Vec<CheckerDiagnostic>) {
 }
 
 fn make_cfg(args: &[String]) -> String {
-    let cfg = include_str!("redis.toml").to_string();
+    let cfg = include_str!("redis.yml").to_string();
 
     let cfg = args.iter().fold(cfg, |cfg, arg| {
         let new_rule = format!(
-            r#"[{}]
-property = true"#,
+            r#"  {}:
+    property: read-only"#,
             arg
         );
 
@@ -99,7 +107,7 @@ impl Checker {
 
     pub fn check(&self, script: &Script) {
         let ast = match full_moon::parse(script.script()) {
-            Ok(ast) => ast.owned(),
+            Ok(ast) => ast.to_owned(),
             Err(ParseError::AstError(AstError::UnexpectedToken {
                 token,
                 additional: _,
@@ -115,12 +123,16 @@ impl Checker {
             }
         };
 
-        let std = StandardLibrary::from_file(&as_path(&make_cfg(&self.defined))).unwrap();
+        let mut std: StandardLibrary= serde_yaml_ng::from_str(&make_cfg(&self.defined)).unwrap();
+        if let Some(base) = std.name.as_ref() {
+            std.extend(StandardLibrary::from_name(base).unwrap());
+        }
+        //let std = StandardLibrary::from_file(&as_path(&make_cfg(&self.defined))).unwrap();
         let cfg: CheckerConfig<toml::value::Value> =
             toml::from_str(include_str!("selene.toml")).unwrap();
 
         // Create a linter
-        let checker = SeleneChecker::new(cfg, std.unwrap()).unwrap();
+        let checker = SeleneChecker::new(cfg, std).unwrap();
 
         // Run the linter
         let mut diags = checker.test_on(&ast);

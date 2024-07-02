@@ -8,7 +8,7 @@ async fn array() {
     let (ks, vs): (Vec<_>, Vec<_>) = (0..10)
         .map(|i| {
             let k = format!("key:{}", i);
-            let d = rmp_serde::Raw::from_utf8(rmp_serde::to_vec(&format!("data:{}", i)).unwrap());
+            let d = rmp_serde::to_vec(&format!("data:{}", i)).unwrap();
             (k, d)
         })
         .unzip();

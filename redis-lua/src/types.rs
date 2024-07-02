@@ -82,8 +82,8 @@ impl Display for Error {
 
 impl std::error::Error for Error {}
 
-impl From<rmp::encode::Error> for Error {
-    fn from(e: rmp::encode::Error) -> Self {
+impl From<std::io::Error> for Error {
+    fn from(e: std::io::Error) -> Self {
         Self(e.to_string())
     }
 }
